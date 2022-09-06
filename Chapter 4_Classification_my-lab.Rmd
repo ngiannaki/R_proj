@@ -1,0 +1,169 @@
+---
+title: "Chapter 4 Lab Classification"
+author: "Nikos Giannakis"
+date: "18/3/2022"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r cars}
+library(ISLR2)
+df <- Smarket
+head(df)
+#?Smarket
+# attach(Smarket)    anti8eto detach(Smarket)
+# save -->     write.csv(df,'test.csv')
+View(df)
+#rm(df2) sbnei apo mnhmh
+```
+
+```{r, echo=FALSE}
+names(df)
+dim(df)
+summary(df)
+```
+
+```{r}
+cor(df[,-9])
+```
+
+```{r}
+plot(df$Volume)
+```
+*Logistic Regression*
+
+```{r}
+#fit
+glm.fit <- glm(Direction ~ Lag1+Lag2+Lag3+Lag4+Lag5+Volume, data=df, family=binomial)
+# model summary
+summary(glm.fit)
+```
+```{r}
+coef(glm.fit)
+summary(glm.fit)$coef
+```
+```{r}
+#prediction
+glm.probs <-predict(glm.fit, type='response')
+glm.probs[1:10]
+#contrasts
+contrasts(df$Direction)
+```
+
+```{r}
+glm.pred <- rep('Down', 1250)
+glm.pred[glm.probs>0.5] <- 'Up'
+```
+```{r}
+glm.pred[1:10]
+```
+```{r}
+#confusion matrix
+table(glm.pred, df$Direction)
+```
+```{r}
+sum(df$Direction=='Up')
+
+#accuracy
+ac <- (145+507)/1250
+ac
+#wnd way
+mean(glm.pred==df$Direction)
+#error rate
+1-ac
+```
+```{r}
+#Train - Test split
+train_index <- df$Year<2005
+df_train <- df[train_index,]
+df_test <- df[!train_index,]
+```
+```{r}
+dim(train)
+dim(test)
+```
+
+```{r}
+#fit
+glm.fit <- glm(Direction ~Lag1 + Lag2 + Lag3+Lag4+Lag5, data=df_train, family=binomial)
+#predict
+glm.probs <-predict(glm.fit,df_test, type='response')
+glm.pred <-rep('Down', 252)
+glm.pred[glm.probs>0.5] <-'Up'
+
+#confusion
+table(glm.pred, df_test$Direction)
+
+```
+
+
+######################
+
+```{r}
+#fit
+glm.fit <- glm(Direction ~Lag1 + Lag2  , data=df_train, family=binomial)
+#predict
+glm.probs <-predict(glm.fit,df_test, type='response')
+glm.pred <-rep('Down', 252)
+glm.pred[glm.probs>0.5] <-'Up'
+#confusion
+table(glm.pred, df_test$Direction)
+```
+
+
+#############################   LDA    #############################################
+```{r}
+library(MASS)
+lda.fit <- lda(Direction ~ Lag1+Lag2, data=df_train)
+print(lda.fit)
+plot(lda.fit)
+lda.pred<- predict(lda.fit, df_test)
+names(lda.pred)
+lda.class <- lda.pred$class
+table(lda.class, df_test$Direction)
+
+mean(lda.class == df_test$Direction)
+```
+#############################   QDA    #############################################
+```{r}
+qda.fit <- qda(Direction ~ Lag1+Lag2, data=df_train)
+print(qda.fit)
+qda.pred<- predict(qda.fit, df_test)
+names(qda.pred)
+qda.class <- qda.pred$class
+table(qda.class, df_test$Direction)
+
+mean(qda.class == df_test$Direction)
+```
+####################### Naive Bayes
+```{r}
+library(e1071)
+nb.fit <- naiveBayes(Direction ~ Lag1+Lag2, data=df_train)
+print(nb.fit)
+#prediction
+nb.pred<- predict(nb.fit, df_test)
+nb.pred
+#confusion matrix
+table(nb.pred, df_test$Direction)
+#accuracy
+mean(nb.pred == df_test$Direction)
+```
+####################### KNN
+```{r}
+library(class)
+train.X <- cbind(df_train$Lag1, df_train$Lag2)  #enwnei 2 sthles se 1 matrix
+test.X <- cbind(df_test$Lag1, df_test$Lag2)
+train.target <- df_train$Direction
+test.target <- df_test$Direction
+
+knn.pred <- knn(train.X, test.X , train.target,k =3)
+
+
+table(knn.pred, test.target)
+mean(knn.pred==test.target)
+```
+
+```

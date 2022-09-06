@@ -1,0 +1,147 @@
+---
+title: "Chapter 3-Exercise 14"
+author: "Gkratsia Tantilian"
+date: "24/03/2022"
+output:
+  html_document: default
+---
+
+<img src="logo_small.png" style="position:absolute;top:30px;right:30px;" />
+
+## Question (a)
+
+> Perform the following commands in R:
+
+```{r  Q314_a1}
+set.seed(1)
+x1 <- runif(100)
+x2 <- 0.5 * x1 + rnorm(100) / 10
+y <- 2 + 2 * x1 + 0.3 * x2 + rnorm(100)
+```
+
+> The last line corresponds to creating a linear model in which `y` is a function of `x1` and `x2`. Write out the form of the linear model.
+What are the regression coefficients?
+
+The linear model formula and regression coefficients are:
+
+$$
+Y  = \beta_0 + \beta_1  X_1 + \beta_2 X_2 + \epsilon
+$$
+where 
+$$
+\beta_0=2\\
+\beta_1=2\\
+\beta_2=0.3
+$$
+
+## Question (b)
+
+>What is the correlation between x1 and x2? 
+Create a scatterplot displaying the relationship between the variables.
+
+In order to find the correlation between x1 and x2 we run the `cor` command in R
+for `x1` and `x2` and the result is
+
+```{r  Q314_b1}
+cor(x1, x2)
+```
+
+The scatterplot that displays the relationship between them is the following.
+
+```{r  Q314_b2, fig.align='center'}
+plot(x1, x2)
+```
+
+## Question (c)
+
+>Using this data, fit a least squares regression to predict y using x1 and x2. Describe the results obtained. What are $\hat{\beta}_0$, $\hat{\beta}_1$, and $\hat{\beta}_2$? 
+How do these relate to the true $\beta_0$, $\beta_1$, and $\beta_2$? 
+Can you reject the null hypothesis $H_0: \beta_1$ = 0? How about the null hypothesis $H_0: \beta_2$ = 0?
+
+While fitting a fit a least squares regression to predict y using x1 and x2 using the following function 
+
+```{r  Q314_c1}
+lm.fit<- lm(y ~ x1 + x2)
+```
+we get the results
+
+```{r  Q314_c2, fig.align='center'}
+summary(lm.fit)
+par(mfrow=c(2, 2))
+plot(lm.fit, main = "y ~ x1 + x2")
+```
+
+Based on the result we have the following 
+
+$$ 
+\hat{\beta}_0 = 2.1305\\
+\hat{\beta}_1 = 1.4396\\
+\hat{\beta}_2 = 1.0097
+$$
+only $\hat{\beta}_0$ is close to $\beta_0$.
+
+We can reject the null hypothesis $H_0: \beta_1=0$ because the p-value is less than 0.05, but we cannot reject the null hypothesis $H_0: \beta_2=0$ because the p-value is higher than 0.05.
+
+## Question (d)
+
+>Now fit a least squares regression to predict y using only x1. Comment on your results. Can you reject the null hypothesis $H_0: \beta_1$ = 0?
+
+```{r  Q314_d1, fig.align='center'}
+fityx1 <- lm(y ~ x1)
+summary(fityx1)
+par(mfrow=c(2,2))
+plot(fityx1, main = "y ~ x1")
+```
+
+We notice that the coefficient of x1 is different from the previous model, the p-value is significant lower and we can still reject the null hypothesis for x1.
+
+## Question (e)
+
+>Now fit a least squares regression to predict y using only x2. Comment on your
+results. Can you reject the null hypothesis $H_0: \beta_1$ = 0
+
+```{r  Q314_e1, fig.align='center'}
+fityx2<-lm(y ~ x2)
+summary(fityx2)
+par(mfrow=c(2,2))
+plot(fityx2, main = "y ~ x2")
+```
+
+We notice that the coefficient of x2 is different from the previous model, the p-value well below 5% and for this model we will reject the null hypothesis for x2.
+
+## Question (f)
+
+>Do the results obtained in (c)–(e) contradict each other? Explain your answer.
+
+The results from c and e are showing a collinearity between x1 and x2 meaning that the two variables are highly correlated to each other. When this happens then the variance of estimated regression coefficient may result in higher number.
+When we regressed x2 separately the linear regression with y was clearer. Therefore, we come to the conclusion that the results do not contradict each other.
+
+## Question (g)
+
+> Now suppose we obtain one additional observation, which was unfortunately mismeasured. Re-fit the linear models from (c) to (e) using this new data. 
+> What effect does this new observation have on the each of the models? In each model, is this observation an outlier? A high-leverage point? Both? Explain your answers.”
+
+```{r  Q314_g1, fig.align='center'}
+missmeasure_x1 <- c(x1, 0.1)
+missmeasure_x2 <- c(x2, 0.8)
+missmeasure_y <- c(y, 6)
+
+fit_missmeasure_yx1x2 <- lm(missmeasure_y ~ missmeasure_x1 + missmeasure_x2)
+fit_missmeasure_yx1 <- lm(missmeasure_y ~ missmeasure_x1)
+fit_missmeasure_yx2 <- lm(missmeasure_y ~ missmeasure_x2)
+summary(fit_missmeasure_yx1x2)
+summary(fit_missmeasure_yx1)
+summary(fit_missmeasure_yx2)
+par(mfrow=c(2,2))
+plot(fit_missmeasure_yx1x2, main = "Missmeasure y~x1+x2")
+par(mfrow=c(2,2))
+plot(fit_missmeasure_yx1, main = "Missmeasure y~x1")
+par(mfrow=c(2,2))
+plot(fit_missmeasure_yx2, main = "Missmeasure y~x2")
+```
+
+Based on the results and plots of each regression:
+
+  - When we evaluate the regression of y using x1 an x2 a leverage point can be revealed
+  - When we evaluate the regression of y using x1 an outlier can be revealed.
+  - When we evaluate the regression of y using x2 a leverage point can be revealed

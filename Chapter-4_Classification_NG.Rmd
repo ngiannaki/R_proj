@@ -1,0 +1,502 @@
+---
+title: "Chapter-4_Classification_NG"
+author: "Nikos Giannakis"
+date: "21/3/2022"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# **Applied Exercise 13**
+
+```{r}
+library(ISLR2)
+df <- Weekly
+head(df)
+```
+
+## *(a)*
+
+- *summary of data*
+```{r}
+summary(df)
+```
+- *dimension of dataset*
+```{r}
+dim(df)
+```
+- *column names*
+```{r}
+names(df)
+```
+- *correlation of data*
+```{r}
+cor(df[,-9])
+```
+```{r}
+#alternative
+library(corrplot)
+corrplot(cor(df[,-9]), method='ellipse')
+```
+
+```{r}
+pairs(df)
+```
+```{r}
+par(mfrow=c(1,2))
+plot(df$Year, df$Volume, xlab='Year', ylab='Volume', main='Scatterplot Volume per Year')
+plot(df$Volume,xlab='Index', ylab='Volume', main='Volume vs Index')
+```
+
+*Comments :*  
+*From the scatterplots and the correlation coefficients we might conclude that there seems to be a positive correlation between the year and the volume meaning that as the years pass the Volume increases.*
+*
+
+## *(b)*
+**Logistic Regression**
+
+
+```{r}
+
+glm.fit <- glm(Direction ~ Lag1 + Lag2 + Lag3 + Lag4 + Lag5 + Volume, data=df, family = binomial)
+summary(glm.fit)
+```
+*Lag2 seems to appear statistical significant in comparison with the other features.*
+*Furthermore, Lag2 appears with a p-value of 0.02 which shows a small statistical significance but it exists.*
+
+## *(c)* 
+**Confusion Matrix**
+```{r, echo=F}
+print(contrasts(df$Direction))
+```
+```{r}
+glm.probs <- predict(glm.fit, type='response')
+glm.pred <- rep('Down', dim(df)[1])
+glm.pred[glm.probs>0.5] <-'Up'
+table(glm.pred, df$Direction)
+```
+*The model categorizes 54 observations as True Down and 557 observations as True Up. So the accuracy is (557+54)/(dim(df)[1]) = 0.5610652*
+*The model predicts 48 times the Direction 'Down' which is wrong and 430 times the Direction Up which is also wrong*
+*Model's error rate is 1-0.5610652 = 0.4389348*
+*We could say that the model performs poorly almost in a random pattern.*
+
+
+## *(d)*
+**Logistic Regression**
+
+*We select as predictor only the variable Lag2*
+
+```{r}
+#select train year as 1990-2008, test year>2008 and Lag2 as predictor
+train_index <-df$Year<2009
+df_train <- df[train_index,]
+df_test <- df[!train_index,]
+#train model
+glm.fit <- glm(Direction ~ Lag2, data=df_train, family = binomial)
+summary(glm.fit)
+```
+```{r}
+#predict
+glm.probs <- predict(glm.fit,df_test, type='response')
+glm.pred <- rep('Down', dim(df_test)[1])
+glm.pred[glm.probs>0.5] <-'Up'
+print("Confusion Matrix:")
+print(table(glm.pred, df_test$Direction))
+cat("\nAccuracy:",mean(glm.pred == df_test$Direction),
+    "\nClassification Error Rate: ",1-mean(glm.pred == df_test$Direction))
+```
+```{r,echo=F}
+accuracy_logistic = mean(glm.pred == df_test$Direction)
+table_logistic =table(glm.pred, df_test$Direction)
+```
+## *(e)*
+**Linear Discriminant Analysis - LDA**
+```{r}
+library(MASS)
+```
+*fit*
+```{r}
+
+lda.fit<- lda(Direction~ Lag2,data=df_train)
+lda.fit
+```
+*predict*
+```{r}
+lda.pred <- predict(lda.fit, df_test)
+lda.class <- lda.pred$class
+print("Confusion Matrix:")
+table(lda.class, df_test$Direction)
+cat("\nAccuracy:",mean(lda.class == df_test$Direction),
+    "\nClassification Error Rate: ",1-mean(lda.class == df_test$Direction))
+```
+```{r,echo=F}
+accuracy_lda = mean(lda.class == df_test$Direction)
+table_lda=table(lda.class, df_test$Direction)
+```
+## *(f)*
+**Quadratic Discriminant Analysis - QDA**
+
+*fit*
+```{r}
+qda.fit <- qda(Direction~ Lag2, data=df_train)
+qda.fit
+```
+*predict*
+```{r}
+qda.pred <- predict(qda.fit, df_test)
+qda.class <- qda.pred$class
+print("Confusion Matrix:")
+table(qda.class, df_test$Direction)
+cat("\nAccuracy:",mean(qda.class == df_test$Direction),
+    "\nClassification Error Rate: ",1-mean(qda.class == df_test$Direction))
+```
+```{r, echo=F}
+accuracy_qda = mean(qda.class == df_test$Direction)
+table_qda=table(qda.class, df_test$Direction)
+```
+
+## *(g)* 
+**KNN**
+```{r}
+library(class)
+```
+```{r}
+train.X <- cbind(df_train$Lag2)
+test.X <- cbind(df_test$Lag2)
+train.target <- df_train$Direction
+set.seed(1)
+```
+```{r}
+knn.pred <- knn(train.X, test.X, train.target, k=1)
+print("Confusion Matrix:")
+table(knn.pred, df_test$Direction)
+cat("\nAccuracy:",mean(knn.pred == df_test$Direction),
+    "\nClassification Error Rate: ",1-mean(knn.pred == df_test$Direction))
+```
+```{r, echo=F}
+accuracy_knn =  mean(knn.pred == df_test$Direction)
+table_knn=table(knn.pred, df_test$Direction)
+```
+
+## *(h)*
+**Naive Bayes**
+```{r}
+library(e1071)
+```
+*fit*
+```{r}
+nb.fit <- naiveBayes(Direction ~ Lag2, data= df_train)
+nb.fit
+```
+*predict*
+```{r}
+nb.pred <- predict(nb.fit, df_test)
+print("Confusion Matrix:")
+table(nb.pred, df_test$Direction)
+cat("\nAccuracy:",mean(nb.pred == df_test$Direction),
+    "\nClassification Error Rate: ",1-mean(nb.pred == df_test$Direction))
+```
+```{r, echo=F}
+accuracy_nb =  mean(nb.pred == df_test$Direction)
+table_nb=table(nb.pred, df_test$Direction)
+```
+## *(i)*
+**Best Results from (d) to (h)**
+
+```{r}
+sensitivity_c <- function(TP,FN) {
+  temp<- TP/(TP+FN)
+  return(temp)
+}
+precision_c <- function(TP,FP){
+  temp <- TP/(TP+FP)
+  return(temp)
+}
+f1_score_c <- function(TP, FP,FN) {
+  temp <- (2*TP)/(2*TP+FP+FN)
+  return(temp)
+}
+```
+
+
+```{r}
+algorithms <- c("Logistic Regression", "LDA", "QDA", "KNN", "NB")
+accuracy <- c(accuracy_logistic,accuracy_lda,accuracy_qda,accuracy_knn, accuracy_nb)
+TP <- c(table_logistic[1,1],table_lda[1,1],table_qda[1,1],table_knn[1,1],table_nb[1,1])
+FP <- c(table_logistic[1,2],table_lda[1,2],table_qda[1,2],table_knn[1,2],table_nb[1,2])
+FN <- c(table_logistic[2,1],table_lda[2,1],table_qda[2,1],table_knn[2,1],table_nb[2,1])
+TN <- c(table_logistic[2,2],table_lda[2,2],table_qda[2,2],table_knn[2,2],table_nb[2,2])
+sensitivity <- c(sensitivity_c(TP[1],FN[1]),sensitivity_c(TP[2],FN[2]),
+                 sensitivity_c(TP[3],FN[3]), sensitivity_c(TP[4],FN[4]),
+                 sensitivity_c(TP[5],FN[5]))
+precision <- c(precision_c(TP[1],FP[1]),precision_c(TP[2],FP[2]),precision_c(TP[3],FP[3]),
+               precision_c(TP[4],FP[4]),precision_c(TP[5],FP[5]))
+f1_score <- c(f1_score_c(TP[1],FN[1],FN[1]),f1_score_c(TP[2],FN[2],FN[2]),f1_score_c(TP[3],FN[3],FN[3]),
+              f1_score_c(TP[4],FN[4],FN[4]),f1_score_c(TP[5],FN[5],FN[5]))
+results <- data.frame(algorithms, accuracy, sensitivity, precision, f1_score, TP, FP, FN, TN)
+```
+```{r}
+print(results)
+```
+
+**Comments:**
+
+- *QDA and NB models can't produce any valuable results regarding the Positives. (we see that TP and FP are both zeros)*
+- *LDA has the same score as Logistic Regression*
+- *KNN seems to predict better the Positive class than the other models but worser the negative class.*
+
+
+## *(j)*
+
+#**Logistic Regression**
+
+```{r}
+#train model
+glm.fit <- glm(Direction ~ Lag1+Lag2+Lag3+Lag4+Lag5, data=df_train, family = binomial)
+summary(glm.fit)
+#predict
+glm.probs <- predict(glm.fit,df_test, type='response')
+glm.pred <- rep('Down', dim(df_test)[1])
+glm.pred[glm.probs>0.5] <-'Up'
+print("Confusion Matrix:")
+print(table(glm.pred, df_test$Direction))
+cat("\nAccuracy:",mean(glm.pred == df_test$Direction),
+    "\nClassification Error Rate: ",1-mean(glm.pred == df_test$Direction))
+```
+*Running the model with all the predictors but in the train set we may see an association also between predictor Lag1 and the dependent variable* 
+*Let's run predictors Lag1 and Lag2*
+
+```{r}
+glm.fit <- glm(Direction ~ Lag1+Lag2 , data=df_train, family = binomial)
+summary(glm.fit)
+#predict
+glm.probs <- predict(glm.fit,df_test, type='response')
+glm.pred <- rep('Down', dim(df_test)[1])
+glm.pred[glm.probs>0.5] <-'Up'
+print("Confusion Matrix:")
+print(table(glm.pred, df_test$Direction))
+cat("\nAccuracy:",mean(glm.pred == df_test$Direction),
+    "\nClassification Error Rate: ",1-mean(glm.pred == df_test$Direction))
+```
+*There seems to be a better result than the previous*
+*Let's run also an interaction between the variables*
+```{r}
+glm.fit <- glm(Direction ~ Lag1+Lag2+Lag1*Lag2 , data=df_train, family = binomial)
+summary(glm.fit)
+#predict
+glm.probs <- predict(glm.fit,df_test, type='response')
+glm.pred <- rep('Down', dim(df_test)[1])
+glm.pred[glm.probs>0.5] <-'Up'
+print("Confusion Matrix:")
+print(table(glm.pred, df_test$Direction))
+cat("\nAccuracy:",mean(glm.pred == df_test$Direction),
+    "\nClassification Error Rate: ",1-mean(glm.pred == df_test$Direction))
+```
+*The produced results are the same as previous.*
+*Let's add Lag5*
+```{r}
+glm.fit <- glm(Direction ~ Lag1+Lag2+Lag3+ Lag1* Lag2* Lag3,  data=df_train, family = binomial)
+summary(glm.fit)
+#predict
+glm.probs <- predict(glm.fit,df_test, type='response')
+glm.pred <- rep('Down', dim(df_test)[1])
+glm.pred[glm.probs>0.5] <-'Up'
+print("Confusion Matrix:")
+print(table(glm.pred, df_test$Direction))
+cat("\nAccuracy:",mean(glm.pred == df_test$Direction),
+    "\nClassification Error Rate: ",1-mean(glm.pred == df_test$Direction))
+```
+*An accuracy of 60 is the best result so far.* 
+*The interaction term Lag1+Lag2+Lag3 seems to be helpful.*
+*Adding Lag4, Lag5 and other interactions produced a worse result than 60 accuracy.*
+
+
+
+#**LDA**
+```{r}
+#fit
+lda.fit<- lda(Direction~ Lag1+Lag2+Lag1*Lag2*Lag3,data=df_train)
+lda.fit
+#predict
+lda.pred <- predict(lda.fit, df_test)
+lda.class <- lda.pred$class
+print("Confusion Matrix:")
+table(lda.class, df_test$Direction)
+cat("\nAccuracy:",mean(lda.class == df_test$Direction),
+    "\nClassification Error Rate: ",1-mean(lda.class == df_test$Direction))
+```
+*Trying the same versions of model as the Logistic Regression LDA produced the same results.*
+
+#**QDA**
+```{r}
+#fit
+qda.fit <- qda(Direction~ Lag1+Lag2, data=df_train)
+qda.fit
+#predict
+qda.pred <- predict(qda.fit, df_test)
+qda.class <- qda.pred$class
+print("Confusion Matrix:")
+table(qda.class, df_test$Direction)
+cat("\nAccuracy:",mean(qda.class == df_test$Direction),
+    "\nClassification Error Rate: ",1-mean(qda.class == df_test$Direction))
+```
+```{r}
+#fit
+qda.fit <- qda(Direction~ Lag1+ Lag2 +Lag3, data=df_train)
+qda.fit
+#predict
+qda.pred <- predict(qda.fit, df_test)
+qda.class <- qda.pred$class
+print("Confusion Matrix:")
+table(qda.class, df_test$Direction)
+cat("\nAccuracy:",mean(qda.class == df_test$Direction),
+    "\nClassification Error Rate: ",1-mean(qda.class == df_test$Direction))
+```
+*Adding Lag3 worsens the model results.*
+```{r}
+#fit
+qda.fit <- qda(Direction~ Lag1+ Lag2 +Lag3+Lag1*Lag2*Lag3, data=df_train)
+qda.fit
+#predict
+qda.pred <- predict(qda.fit, df_test)
+qda.class <- qda.pred$class
+print("Confusion Matrix:")
+table(qda.class, df_test$Direction)
+cat("\nAccuracy:",mean(qda.class == df_test$Direction),
+    "\nClassification Error Rate: ",1-mean(qda.class == df_test$Direction))
+```
+*Trying to add interaction terms produced lower accuracies.*
+
+#**KNN**
+*All Lags*
+```{r}
+plot_k <- function(X_train, y_train,X_test, y_test) {
+  
+    knn.pred <-NULL
+    knn.error <-NULL
+    for (k in 1:50) {
+    knn.pred <- knn(X_train, X_test, y_train, k=k)
+    knn.error[k] <- mean(knn.pred != y_test)
+    }
+    library(ggplot2)
+    k.values <-1:50
+    error.df <- data.frame(knn.error, k.values)
+    ggplot(error.df, aes(k.values, knn.error)) + 
+      geom_point() + 
+      geom_line(lty='dotted', color='red')
+}
+```
+
+```{r}
+#Lag1+Lag2+Lag3+Lag4+Lag5
+train.X <- cbind(scale(df_train[,c('Lag1','Lag2','Lag3','Lag4','Lag5')]))
+test.X <- cbind(scale(df_test[,c('Lag1','Lag2','Lag3','Lag4','Lag5')]))
+train.target <- df_train$Direction
+set.seed(1)
+plot_k(train.X,train.target,test.X,df_test$Direction)
+```
+```{r}
+#Lag1+Lag2+Lag3+Lag4 
+train.X <- cbind(scale(df_train[,c('Lag1','Lag2','Lag3','Lag4' )]))
+test.X <- cbind(scale(df_test[,c('Lag1','Lag2','Lag3','Lag4' )]))
+train.target <- df_train$Direction
+set.seed(1)
+plot_k(train.X,train.target,test.X,df_test$Direction)
+```
+```{r}
+#Lag1+Lag2+Lag3 
+train.X <- cbind(scale(df_train[,c('Lag1','Lag2','Lag3' )]))
+test.X <- cbind(scale(df_test[,c('Lag1','Lag2','Lag3' )]))
+train.target <- df_train$Direction
+set.seed(1)
+plot_k(train.X,train.target,test.X,df_test$Direction)
+```
+```{r}
+#Lag1+Lag2  
+train.X <- cbind(scale(df_train[,c('Lag1','Lag2'  )]))
+test.X <- cbind(scale(df_test[,c('Lag1','Lag2'  )]))
+train.target <- df_train$Direction
+set.seed(1)
+plot_k(train.X,train.target,test.X,df_test$Direction)
+```
+```{r}
+# Lag2+Lag3 +Lag4
+train.X <- cbind(scale(df_train[,c('Lag2','Lag3','Lag4' )]))
+test.X <- cbind(scale(df_test[,c( 'Lag2','Lag3','Lag4' )]))
+train.target <- df_train$Direction
+set.seed(1)
+plot_k(train.X,train.target,test.X,df_test$Direction)
+```
+**Best KNN models**
+```{r}
+#fit
+train.X <- cbind(scale(df_train[,c('Lag1','Lag2'  )]))
+test.X <- cbind(scale(df_test[,c('Lag1','Lag2'  )]))
+knn.pred <- knn(train.X, test.X, train.target, k=18)
+print("Confusion Matrix:")
+table(knn.pred, df_test$Direction)
+cat("\nAccuracy:",mean(knn.pred == df_test$Direction),
+    "\nClassification Error Rate: ",1-mean(knn.pred == df_test$Direction))
+```
+
+```{r}
+#fit
+train.X <- cbind(scale(df_train[,c('Lag1','Lag2','Lag3' )]))
+test.X <- cbind(scale(df_test[,c('Lag1','Lag2','Lag3' )]))
+knn.pred <- knn(train.X, test.X, train.target, k=7)
+print("Confusion Matrix:")
+table(knn.pred, df_test$Direction)
+cat("\nAccuracy:",mean(knn.pred == df_test$Direction),
+    "\nClassification Error Rate: ",1-mean(knn.pred == df_test$Direction))
+```
+#**Naive Bayes**
+```{r}
+#fit
+nb.fit <- naiveBayes(Direction ~ Lag1+Lag2, data= df_train)
+nb.fit
+#predict
+nb.pred <- predict(nb.fit, df_test)
+print("Confusion Matrix:")
+table(nb.pred, df_test$Direction)
+cat("\nAccuracy:",mean(nb.pred == df_test$Direction),
+    "\nClassification Error Rate: ",1-mean(nb.pred == df_test$Direction))
+```
+
+```{r}
+#fit
+nb.fit <- naiveBayes(Direction ~ Lag1+Lag2+Lag3, data= df_train)
+nb.fit
+#predict
+nb.pred <- predict(nb.fit, df_test)
+print("Confusion Matrix:")
+table(nb.pred, df_test$Direction)
+cat("\nAccuracy:",mean(nb.pred == df_test$Direction),
+    "\nClassification Error Rate: ",1-mean(nb.pred == df_test$Direction))
+```
+
+```{r}
+#fit
+nb.fit <- naiveBayes(Direction ~ Lag1+Lag2+Lag3+Lag4, data= df_train)
+nb.fit
+#predict
+nb.pred <- predict(nb.fit, df_test)
+print("Confusion Matrix:")
+table(nb.pred, df_test$Direction)
+cat("\nAccuracy:",mean(nb.pred == df_test$Direction),
+    "\nClassification Error Rate: ",1-mean(nb.pred == df_test$Direction))
+```
+
+```{r}
+#fit
+nb.fit <- naiveBayes(Direction ~ Lag1+Lag2+Lag3+Lag4+Lag5, data= df_train)
+nb.fit
+#predict
+nb.pred <- predict(nb.fit, df_test)
+print("Confusion Matrix:")
+table(nb.pred, df_test$Direction)
+cat("\nAccuracy:",mean(nb.pred == df_test$Direction),
+    "\nClassification Error Rate: ",1-mean(nb.pred == df_test$Direction))
+```
+*Best NB model is with predictors Lag1+Lag2*

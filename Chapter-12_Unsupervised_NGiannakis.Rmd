@@ -1,0 +1,83 @@
+---
+title: "Chapter 12 - Unsupervised Learning"
+author: "Nikos Giannakis"
+date: "22/5/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Chapter 12 - Unsupervised Learning
+
+### Exercise 7
+
+```{r}
+# read dataset
+library(ISLR2)
+df <- USArrests
+```
+
+```{r}
+# scale tr data
+df_sc <- t(scale(t(df)))
+```
+
+```{r}
+# compute squared euclidean distance
+eucl_d_s <- dist(df_sc)^2
+```
+
+```{r}
+# compute correlation
+cor_df <- cor(t(df_sc))
+```
+
+```{r}
+# compute 1 - correlation
+one_m_cor <- as.dist(1- cor_df)
+```
+
+```{r}
+# show proportionality through a linear line relationship
+plot(one_m_cor,eucl_d_s)
+```
+
+
+### Exercise 8
+
+
+```{r}
+# load dataset
+df <- USArrests
+```
+
+#### (a) Using sdev output to calculate PVE
+```{r}
+# prcomp and sdev
+pca.out <- prcomp(df,scale=T)
+# variance of each principal component
+pca.var <- pca.out$sdev^2
+# proportion of variance explained
+pve <- pca.var / sum(pca.var)
+print(pve)
+```
+
+#### (b) Using equation 12.10 directly 
+
+```{r}
+# Firstly, use prcomp function
+pca <- prcomp(df,scale=T)
+```
+```{r}
+# Secondly, use the loadings in equation 12.10 to obtain PVE
+#loadings
+loadings <- pca$rotation
+# sum of var
+sumofvar <- sum(apply(as.matrix(scale(df))^2, 2,  sum))
+# compute pve
+pve2 <- apply((as.matrix(scale(df)) %*% loadings)^2,2, sum) / sumofvar
+print(pve2)
+```
+

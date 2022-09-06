@@ -1,0 +1,224 @@
+---
+title: "Chapter 3_Linear Regression_Ng"
+author: "Nikos Giannakis"
+date: "14/3/2022"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# **CHAPTER 3 - Linear Regression**
+
+## **Applied Exercises**
+
+
+### **Exercise 8**
+
+#### (a)
+
+```{r}
+library(ISLR2)
+df <- Auto
+lm.fit <- lm(mpg ~ horsepower, data=df)
+summary(lm.fit)
+```
+##### *i.* 
+It seems that there is a relationship between the response variable and the predictor because the F-statistic is bigger than 1.
+
+##### *ii.*
+The relationship between the response variable and the predictor seems to be strong due to the p-value which is less than 0.001, meaning that it is unlikely to observe such an association between the 2 variables due to chance, in the absence of any real association between the predictor and the response variable. 
+
+##### *iii.* 
+The relationship between the response variable and the predictor is negative because the coefficient is negative.
+
+##### *iv.* 
+```{r}
+d <- data.frame(horsepower=c(98))
+p <-predict(lm.fit, d, interval="confidence", level=0.95)
+cat("prediction of horsepower 98:", p[1], "\nlower bound:",p[2], "\nupper bound:",p[3])
+cat("\n\nConfidence interval for the prediction. \n")
+p
+cat("\n\nPrediction interval for the prediction. \n")
+predict(lm.fit, d, interval="predict", level=0.95)
+
+```
+*As expected we may see a larger range for the prediction interval in comparison to the confidence interval.*
+
+
+#### (b)
+```{r}
+plot(df$horsepower,df$mpg , main='Predictor vs Response')
+abline(lm.fit, col='red')
+```
+
+#### (c)
+```{r}
+par(mfrow=c(2,2))
+plot(lm.fit)
+```
+
+- **(1,1)** *It seems like there is a non linear relationship between the predictor and response variable.*  
+
+- **(1,2)** *Residuals seem to be normally distributes although there are some observations to appear to be little further than the rest.*  
+
+- **(2,1)** *Observations seem to have bigger variance as the value of fitted values grows.*  
+
+- **(2,2)** *The plot helps us to find if there is any influential value in the extreme-value observations. It seems that if the number observations of the plot is removed, the model that will be created might have better performance.*
+
+\newpage
+
+### **Exercise 12**
+
+#### (a)
+
+*The circumstance under which the coefficient estimate for the regression of X onto Y is the same as the coefficient estimate for the regression of Y onto X if the sum of squares of y values is the same as the sum of squares of x-values.*
+
+#### (b)
+```{r}
+set.seed(100)
+x <- rnorm(100)
+y <- 10*x
+```
+```{r}
+cat("sum(x^2) == sum(y^2) ? -->", sum(x^2) == sum(y^2))
+lm.fit1 <- lm(y~x)
+lm.fit2 <- lm(x~y)
+```
+
+```{r}
+summary(lm.fit1)
+```
+```{r}
+summary(lm.fit2)
+```
+
+```{r}
+coef(lm.fit1)
+coef(lm.fit2)
+```
+#### (c)
+
+
+```{r}
+x <- rnorm(100)
+y <-sample(x,100)
+```
+
+```{r}
+x[1:4]
+y[1:4]
+cat("sum(x^2) == sum(y^2) ? -->", sum(x^2) == sum(y^2))
+```
+
+```{r}
+lm.fit1 <- lm(y~x)
+lm.fit2 <- lm(x~y)
+```
+
+```{r}
+coef(lm.fit1)
+coef(lm.fit2)
+```
+\newpage
+
+### **Exercise 14**
+
+#### (a)
+```{r}
+set.seed(1)
+x1<-runif(100)
+x2<- 0.5*x1 +rnorm(100)/10
+y<- 2+2*x1+0.3*x2 + rnorm(100)
+```
+The function is:  
+
+$$Y = b~0~ + b~1~ * X~1~ + b~2~ * X~2~ + e $$  
+where the regression coefficient are:   $$b~0~ = 2, b~1~ = 2,  b~2~ = 0.3$$ 
+
+
+
+#### (b)
+
+```{r}
+cor(x1,x2)
+```
+
+```{r}
+plot(x1,x2, main='scatterplot')
+```
+*It seems there is a strong positive correlation between x1 and x2.*
+
+#### (c)
+```{r}
+lm.fit1 <- lm(y ~x1+x2)
+summary(lm.fit1)
+```
+- *bhat are the estimated coefficients of the model.* 
+- *b0 hat is close to true b0. b1 hat is smaller than true b1 and b2 hat is bigger than true b2. Also they seem to have big standard error. *
+- *We can reject the null hypothesis for b1 because p-value seems to be less than 0.05.*
+- *We can't reject the null hypothesis for b2 because the p-value is quite large.*
+
+#### (d)
+```{r}
+lm.fit2 <- lm(y~x1)
+summary(lm.fit2)
+```
+- *R-squared remained almost the same. *
+- *x1 standard error is reduced by a lot. *
+- *It seems that there is a statistical significance in our result.*
+- *We can reject the null  hypothesis for b1 because of the small p-value (close to 0).*
+
+#### (e)
+```{r}
+lm.fit3 <- lm(y~x2)
+summary(lm.fit3)
+```
+- *R-squared is smaller than previous models.*
+- *Standard error for b1 is smaller than previous model.*
+- *We can reject the null hypothesis for b1 because the p value is small (near to 0). *
+
+#### (f)
+- *x1 and x2 have a strong correlation. *
+- *model 1 with x1 and x2 due to x1,x2 collinearity doesn't create clear results.*
+- *The effect of x1, x2 variables on y can be seen on models 2 and 3.*
+
+#### (g)
+
+```{r}
+x1 <- c(x1,0.1)
+x2 <- c(x2,0.8)
+y <- c(y,6)
+```
+
+```{r}
+lm.fit1 <- lm(y~x1+x2)
+summary(lm.fit1)
+par(mfrow=c(2,2))
+plot(lm.fit1)
+```
+- *x2 seems to be now more significant predictor than x1 as the p-values show.*
+- *also observation 101 (the one that was added) seems to have a high leverage creating an effect to the model's performance.*
+
+
+```{r}
+lm.fit2 <- lm(y~x1 )
+summary(lm.fit2)
+par(mfrow=c(2,2))
+plot(lm.fit2)
+```
+- *X1 seems to be a strong predictor due to the small p-value. *
+- *observation 101 shows that it is a far observation but maybe not an outlier. *
+```{r}
+lm.fit3 <- lm(y~ x2)
+summary(lm.fit3)
+par(mfrow=c(2,2))
+plot(lm.fit3)
+```
+
+- *X2 seems a strong predictor due to its p-value for the given t-value.*
+- *101 observation has also high leverage.*

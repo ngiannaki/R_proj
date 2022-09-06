@@ -1,0 +1,265 @@
+---
+title: "Trees_exercises_NG"
+author: "Nikos Giannakis"
+date: "1/5/2022"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# CHAPTER 8
+# Tree Based Methods
+
+## Exercise 7
+
+```{r }
+library(MASS)
+library(randomForest)
+df <- Boston
+set.seed(0)
+train <- sample(1:nrow(df), nrow(df)/2)
+y_test <- df[-train,14]
+```
+
+## Random Forest Model
+
+#### Changing the mtry parameter
+```{r }
+mtr <- c(1:13)
+```
+
+```{r}
+results1 <- array()
+for (n in mtr) {
+  set.seed(0)
+  rf <- randomForest(medv ~., data=df, subset=train, mtry=n, importance=TRUE, ntree=25)
+  yhat <- predict(rf, newdata=df[-train,])
+  MSE = mean((yhat - y_test)^2)
+  results1[n] = MSE
+}
+```
+
+```{r}
+library(ggplot2)
+s <- data.frame(mtr,results1)
+ggplot(data=s, mapping=aes(x=mtr, y=results1)) +
+      geom_point(color = "cornflowerblue",alpha = .7,size = 3) +
+      labs(title = "MSE of Random Forest models for different mtry",
+            x = "MTRY",
+            y = "MSE") +
+  scale_x_continuous(breaks = seq(0, 14)) +
+  geom_line()
+```
+**Comment**:
+- It seems that the best mtry parameter is 3 or 6-8.
+
+#### Changing the ntrees parameter (for mtry 3,6, 7,8)
+```{r }
+set.seed(0)
+ntrees <- seq(10,500, 10)
+results2 <- array()
+results3 <- array()
+results4 <- array()
+results5 <- array()
+for (n in c(1:length(ntrees))) {
+  set.seed(0)
+  rf2 <- randomForest(medv ~., data=df, subset=train, mtry=3, importance=TRUE, ntree=ntrees[n])
+  yhat2 <- predict(rf2, newdata=df[-train,])
+  MSE2 = mean((yhat2 - y_test)^2)
+  results2[n] = MSE2
+  set.seed(0)
+  rf3 <- randomForest(medv ~., data=df, subset=train, mtry=6, importance=TRUE, ntree=ntrees[n])
+  yhat3 <- predict(rf3, newdata=df[-train,])
+  MSE3 = mean((yhat3 - y_test)^2)
+  results3[n] = MSE3
+  set.seed(0)
+  rf4 <- randomForest(medv ~., data=df, subset=train, mtry=7, importance=TRUE, ntree=ntrees[n])
+  yhat4 <- predict(rf4, newdata=df[-train,])
+  MSE4 = mean((yhat4 - y_test)^2)
+  results4[n] = MSE4
+  set.seed(0)
+  rf5 <- randomForest(medv ~., data=df, subset=train, mtry=8, importance=TRUE, ntree=ntrees[n])
+  yhat5 <- predict(rf5, newdata=df[-train,])
+  MSE5 = mean((yhat5 - y_test)^2)
+  results5[n] = MSE5
+}
+
+```
+
+```{r }
+s1 <- data.frame(ntrees, results2, results3)
+
+ggplot(data=s1, aes(x=ntrees)) +
+      geom_point(aes(y=results2,color='3'),alpha = .7,size = 2) +
+      geom_point(aes(y=results3,color='6'),alpha = .7,size = 2) +
+      geom_point(aes(y=results4,color='7'),alpha = .7,size = 2) +
+      geom_point(aes(y=results5,color='8'),alpha = .7,size = 2) +
+      geom_line(aes(y=results2,color='3'),alpha = .7) + 
+      geom_line(aes(y=results3,color='6'),alpha = .7) +
+      geom_line(aes(y=results4,color='7'),alpha = .7) +
+      geom_line(aes(y=results5,color='8'),alpha = .7) +
+  
+        labs(title = "MSE of Random Forest models for different ntrees",
+            x = "NTREES",
+            y = "MSE", 
+            color='MTRY') +
+  scale_x_continuous(breaks = seq(0, 520,20)) +
+  scale_color_manual(values=c('3'='red', '6'='green', '7'='blue','8'='black')) +
+  theme(text = element_text(size = 10), axis.text.x = element_text(angle = 30) )
+  
+```
+
+**Comments**: 
+- The best MSE is scored by an mtry of 3 for ntrees=25. 
+- MTRY of 7 seems to have better results than the rest.
+- Best MSE score is the one with mtry=7 and ntrees=40.
+
+
+
+
+## Exercise 8
+
+```{r}
+library(ISLR2)
+data <- Carseats
+head(data)
+```
+### (a) Data Splitting (50% train, 50% test)
+
+```{r}
+set.seed(0)
+train <- sample(1:nrow(data), nrow(data)/2)
+test <- data[-train,]
+y_test <- data[-train,1]
+```
+
+### (b) Regression Tree
+```{r}
+library(tree)
+set.seed(0)
+reg.tree <- tree(Sales ~., data=data, subset=train)
+summary(reg.tree)
+#plot tree
+plot(reg.tree)
+text(reg.tree, pretty=0)
+#get the test MSE
+reg.tree.yhat <- predict(reg.tree, newdata=data[-train,])
+
+cat("\nTEST MSE = ", mean((reg.tree.yhat-y_test)^2))
+```
+**Comment**: 
+- Test MSE=4.27
+- The plot shows that the model starts each time the decision from the ShelveLoc Variable and then Price and Age.
+
+### (c) Crossvalidation  Approach
+
+```{r}
+set.seed(0)
+cv.reg.tree <- cv.tree(reg.tree, FUN=prune.tree)
+names(cv.reg.tree)
+```
+```{r}
+cv.reg.tree$k
+par(mfrow = c(1, 2))
+plot(cv.reg.tree$size , cv.reg.tree$dev, type = "b")
+plot(cv.reg.tree$k, cv.reg.tree$dev, type = "b")
+```
+```{r}
+prune.reg.tree <- prune.tree(reg.tree , best = 15)
+plot(prune.reg.tree)
+text(prune.reg.tree , pretty = 0)
+prune.reg.tree.yhat <- predict(prune.reg.tree, newdata = data[-train,])
+cat("TEST MSE = ", mean((prune.reg.tree.yhat-y_test)^2))
+
+```
+**Comment**:
+- Pruned Test MSE = 4.28, slightly better than the previous.
+- Best size to prune seems to be the 15.
+
+### (d) Bagging approach
+```{r}
+set.seed(0)
+bag.tree <- randomForest(Sales~., data=data, subset=train, mtry=10, importance=TRUE)
+bag.tree
+bag.yhat <- predict(bag.tree, newdata=data[-train,])
+
+cat("Bagging Test MSE = ", mean((bag.yhat-y_test)^2))
+
+importance(bag.tree)
+varImpPlot(bag.tree)
+```
+
+**Comment:**
+- ShelveLoc and Price seem to be the most important variable for the model to make the prediction.
+- The Bagging Test MSE is 2.62 almost half of the regression tree model.
+
+### (e) Random Forests
+
+```{r}
+set.seed(0)
+rf1 <- randomForest(Sales~., data=data, subset=train, mtry=9, importance=TRUE)
+rf1.yhat <- predict(rf1, newdata=data[-train,])
+
+importance(rf1)
+varImpPlot(rf1)
+cat("RF Test MSE = ", mean((rf1.yhat-y_test)^2))
+```
+
+```{r}
+set.seed(0)
+mtr <- c(1:9)
+results1 <- array()
+for (n in mtr) {
+  rf <- randomForest(Sales~., data=data, subset=train, mtry=n)
+  yhat <- predict(rf, newdata=data[-train,])
+  MSE = mean((yhat - y_test)^2)
+  results1[n] = MSE
+}
+
+s <- data.frame(mtr,results1)
+ggplot(data=s, mapping=aes(x=mtr, y=results1)) +
+      geom_point(color = "cornflowerblue",alpha = .7,size = 3) +
+      labs(title = "Effect of different mtry in MSE",subtitle='RandomForest',
+            x = "MTRY",
+            y = "MSE") +
+  scale_x_continuous(breaks = seq(0, 12)) +
+  geom_line()
+```
+
+
+**Comments**:
+- Most important variables seem to be again ShelveLoc and Price.
+- The effect of m, the number of variables considered at each split is show on the upper diagramm. An mtry of 6-8 seems the best choice.
+- Best Test MSE approximately 2.59
+
+
+### (f) Bayesian Additive Regression Trees - BART
+
+```{r}
+library(BART)
+set.seed(0)
+x_train <- data[train, 2:11]
+x_test<- data[-train, 2:11]
+y_train <- data[train,1]
+bartfit <- gbart(x_train , y_train , x.test = x_test)
+```
+```{r}
+#Compute Test MSE
+bart.yhat <- bartfit$yhat.test.mean
+cat("BART Test MSE = ", mean((bart.yhat-y_test)^2))
+```
+
+```{r}
+#we can check how many times each variable appeared in the collection of trees.
+ord <- order(bartfit$varcount.mean , decreasing = T)
+bartfit$varcount.mean[ord]
+```
+
+**Comment**:
+- BART seems to outperform all the previous models.
+- BART Test MSE 1.44 almost 1 point lower than the second best choice.
+- BART is taking decisions by considering more important the Price variable. 

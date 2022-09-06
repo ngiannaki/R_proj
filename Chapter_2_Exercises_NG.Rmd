@@ -1,0 +1,315 @@
+---
+title: "Chapter2_applied_NG"
+author: "Nikos Giannakis"
+date: "7/3/2022"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# **CHAPTER 2 - Statistical Learning**
+
+## **Applied Exercises**
+
+
+## **Exercise 8**
+
+#### (a) AND (b)
+```{r , echo=T}
+library(ISLR2)
+college <- read.csv("https://www.statlearning.com/s/College.csv")
+print("Dataset College has been read!")
+```
+```{r , echo=T}
+rownames(college) <- college[,1]
+#View(college)
+
+college <- college[,-1]
+#View(college)
+```
+
+
+#### (c)
+
+##### *i.*
+```{r summary, echo=T}
+summary(college)
+```
+
+##### *ii.*
+
+```{r pairs, echo=T}
+college$Private <- as.factor(college$Private)
+pairs(college[,1:10])
+```
+
+
+##### *iii.*
+
+```{r scatterplot, echo=T}
+plot(College$Private, college$Outstate, xlab="Private", ylab="OutState")
+```
+
+##### *iv.*
+
+```{r create Elite, echo=T}
+Elite<- rep("No", nrow(college))
+Elite[college$Top10perc > 50] <- "Yes"
+Elite <- as.factor(Elite)
+college <- data.frame(college, Elite)
+
+summary(college)
+
+plot(College$Private, college$Outstate, xlab="Private", ylab="OutState")
+```
+
+
+##### *v.*
+
+```{r Histogram, echo=T}
+
+par(mfrow = c(2, 2))
+hist(college$Outstate,breaks=20, xlab="Value", ylab="Frequency", main="Histogram of Outstate")
+hist(college$Top10perc,breaks=50, xlab="Value", ylab="Frequency", main="Histogram of Top10perc")
+hist(college$Apps,breaks=10, xlab="Value", ylab="Frequency", main="Histogram of Apps")
+hist(college$Accept,breaks=100, xlab="Value", ylab="Frequency", main="Histogram of Accept")
+```
+##### *vi.*
+
+**a small summary about the data**
+
+```{r other, echo=T}
+
+par(mfrow = c(2, 2))
+plot(college$Outstate, college$Grad.Rate, xlab="OutState", ylab="Graduation Rate", main="corr high Outstate vs Graduation rate")
+plot(college$Top10perc, college$Grad.Rate, xlab="Top10", ylab="Graduation Rate", main="cor top10 vs Graduation rate")
+plot(college$Accept/ college$Apps, college$Grad.Rate, xlab="Acceptance rate", ylab="Graduation Rate", main="Acceptance versus Graduation rate")
+plot(college$Elite,college$PhD, xlab="Elite", ylab="PhD", main="Elite vs PhD")
+```
+
+## **Exercise 9**
+
+### (a)
+
+```{r}
+Auto <- Auto
+Auto <- na.omit(Auto)
+#View(Auto)
+print(dim(Auto))
+```
+```{r}
+summary(Auto)
+head(Auto)
+quantitative <- c('mpg', 'cylinders', 'displacement', 'horsepower','weight','acceleration', 'year')
+qualitative <- c('origin', 'name')
+
+cat("\n", "Qualitative Variables: ", qualitative, "\n","Quantitative Variables: " , quantitative)
+
+```
+### (b)
+
+```{r}
+for (nam in  quantitative)
+     {cat("Range of",nam," = ", range(Auto[,nam]), "\n")}
+```
+
+### (c) 
+
+```{r}
+for (nam in  quantitative)
+     {cat("Mean of",nam," is ", mean(Auto[,nam])," and Std is ", sd(Auto[,nam]), "\n")}
+```
+### (d)
+``` {r}
+subset <- Auto[-c(1:85),]
+dim(subset)
+for (nam in  quantitative)
+{cat(toupper(nam)," | Mean=", mean(subset[,nam]),"  |   Std=", sd(subset[,nam]),"  |  Range=", range(subset[,nam]), "\n")}
+
+#alternative 
+print("mean")
+sapply(Auto[-seq(10, 85), quantitative], mean)
+```
+
+### (e)
+```{r}
+pairs(Auto[,quantitative ])
+```
+
+```{r}
+plot(Auto$cylinders, Auto$horsepower, xlab="cylinders", ylab="Horsepower", main = "Correlation Cylinders vs Horsepower")
+```
+```{r, echo=F}
+print("More the cylinders less the horsepower")
+```
+
+```{r}
+plot( Auto$mpg, Auto$cylinders, xlab="mpg", ylab="Cylinders", main = "Correlation Cylinders vs Cylinders")
+```
+```{r, echo=F}
+print("More the mpg less the cylinders")
+```
+
+```{r}
+plot( Auto$weight, Auto$horsepower, xlab="weight", ylab="horsepower", main = "Correlation Weigth vs Horsepower")
+```
+```{r, echo=F}
+print("Heavier the car more the horsepower")
+```
+
+```{r}
+plot(Auto$year, Auto$horsepower, xlab="year", ylab="Horsepower", main = "Horsepower through the years")
+```
+```{r, echo=F}
+print("lesser the years more the horsepower")
+```
+
+```{r}
+hist(Auto$origin)
+```
+```{r, echo=F}
+print("MOST CARS ARE ORIGINATED FROM 1")
+```
+
+### (f)
+```{r}
+library(corrplot)
+corrplot(cor(Auto[,quantitative]), method='ellipse')
+```
+*Thinner and darker ellipse might suggest stronger correlation between mpg and the rest variables. This means stronger predictors. The strongest predictor seems to be the weight.*
+
+
+```{r}
+plot(Auto$mpg, Auto$weight, xlab="mpg", ylab="weight", main="mpg vs weight correlation")
+```
+
+
+
+## **Exercise 10**
+
+### (a)
+
+```{r, echo=F}
+?Boston
+cat("Dataset contains",dim(Boston)[1] ,"rows and", dim(Boston)[2],"variables!")
+```
+- *crim* : per capita crime rate by town
+- *zn* : proportion of residential land zoned for lots over 25,000 sq.ft.
+- *indus* : proportion of non-retail business acres per town.
+- *chas* : Charles River dummy variable (= 1 if tract bounds river; 0 otherwise).
+- *nox* : nitrogen oxides concentration (parts per 10 million).
+- *rm* : average number of rooms per dwelling.
+- *age* : proportion of owner-occupied units built prior to 1940.
+- *dis* : weighted mean of distances to five Boston employment centres.
+- *rad* : index of accessibility to radial highways.
+- *tax* : full-value property-tax rate per $10,000.
+- *ptratio* : pupil-teacher ratio by town.
+- *lstat* : lower status of the population (percent).
+- *medv* : median value of owner-occupied homes in $1000s.
+
+### (b) and (c)
+
+```{r}
+summary(Boston)
+head(Boston)
+pairs(Boston[,c('crim', 'zn', 'indus', 'chas', 'nox', 'rm','age')])
+pairs(Boston[,c('crim', 'dis', 'rad', 'tax', 'ptratio','lstat', 'medv')])
+```
+*Seems that capital crime rate might be associated with age,medv,lstat posively and maybe dis negatively*
+
+### (d) 
+
+```{r}
+
+highcrime = Boston[which(Boston$crim  > mean(Boston$crim) + 2*sd(Boston$crim)),]
+hist(Boston$crim)
+cat(" The number of suburbs having 95% the highest crime rate is ", dim(highcrime)[1], ". \n","Minimum value of 95% high values in high crime rates: ", min(highcrime$crim), "maximum is: ", max(highcrime$crim), ". \n", 
+    "There is a wide range of crime rate!")
+```
+
+
+```{r}
+hightax = Boston[which(Boston$tax  > mean(Boston$tax) + 2*sd(Boston$tax)),]
+hist(Boston$tax)
+print(range(Boston$tax))
+cat("Number of suburbs with high than 95% tax is ", dim(hightax)[1])
+
+```
+```{r}
+highptratio = Boston[which(Boston$ptratio > mean(Boston$ptratio) + 2*sd(Boston$ptratio)),]
+hist(Boston$ptratio)
+print(range(Boston$ptratio))
+cat("Number of suburbs with high pupil to teather ratio than the 95% is ", dim(highptratio)[1])
+```
+
+### (e)
+
+
+```{r}
+cat(" There are ", sum(Boston$chas==1) , " suburbs in the dataset that bound the Charles river")
+```
+
+### (f) 
+
+```{r}
+cat("The median pupil-teacher ratio among the towns is ", median(Boston$ptratio))
+```
+
+### (g)
+
+```{r}
+cat("The suburbs wich the min median value of occupied homes are: ",which(Boston$medv==min(Boston$medv)))
+```
+```{r}
+#Boston[399,]
+#Boston[406,]
+
+means <- sapply(Boston, mean)
+std <- sapply(Boston, sd)
+
+#compare 
+print("Boston - 399")
+print("Values more than mean+2*std")
+print(Boston[399,] > means+ 2*std)
+print("Values less than mean-2*std")
+print(Boston[399,] < means- 2*std)
+
+print("Boston - 406")
+print("Values more than mean+2*std")
+print(Boston[406,] > means+ 2*std)
+print("Values less than mean-2*std")
+print(Boston[406,] < means- 2*std)
+
+```
+*Every value that is True means that it belongs to the lower than 5% or higher than 95% of values*
+
+
+### (h)
+
+```{r}
+cat(" Census tracts that average more than 7 rooms per dwelling is : ", sum(Boston$rm > 7), ". \n"," Census tracts that average more than 8 rooms per dwelling is : ", sum(Boston$rm > 8),".")
+
+pairs(Boston[which(Boston$rm > 8),])
+rooms_more_8 <- Boston[which(Boston$rm > 8),]
+```
+*Values comparison between 8rooms and more and the normal values of dataset*
+
+```{r}
+print("Values more than mean+2*std")
+print(sapply(rooms_more_8,mean) > means+ 2*std)
+
+print("Values less than mean-2*std")
+print(sapply(rooms_more_8,mean) < means- 2*std)
+```
+*every True means that the mean value of the suburbs containing rooms more than 8 have extremely low or high values than the mean value*
+
+```{r}
+print(sapply(rooms_more_8,mean))
+print(summary(Boston))
+```
+*crim seems to be low, age close to the mean, tax close to the median, ptratio lower than the mean, lstat lower than the 1st Quartitle and medv above the 3rd quartitle and close to the maximum value.*

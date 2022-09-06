@@ -1,0 +1,345 @@
+---
+title: "Chapter 9 - SVMs"
+author: "Nikos Giannakis"
+date: "7/5/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# CHAPTER 9
+# Support Vector Machines (SVMs)
+
+## Exercise 4
+
+```{r}
+#create random dataset
+set.seed(1)
+x1<-c(1:100)
+x2 <- rnorm(100)^2
+x <- matrix(c(x1,x2), ncol=2)
+y<- c(rep(0,25), rep(1,25),rep(0,25), rep(1,25)) #,rep(0,25))
+x[y==1,2] <- x[y==1,2]
+plot(x, col=(2-y))
+```
+
+
+
+```{r}
+#create train and test sets (proportionated 50%)
+set.seed(1)
+train <- sample(100, 50)
+trainset <- data.frame(x=x[train,], y=as.factor(y[train]))
+testset <- data.frame(x=x[-train,], y=as.factor(y[-train]))
+```
+
+### Create a linear Support Vector Classifier crossvalidated
+
+```{r}
+#SVM
+library(e1071)
+set.seed(1)
+tune.out <- tune(svm, y~., data=trainset, kernel='linear',
+                 range=list(cost=c(0.001, 0.01, 0.1, 1., 5., 10, 100)), decision.values=T)
+summary(tune.out)
+bestmodellinear <- tune.out$best.model
+summary(bestmodellinear)
+```
+
+### Create a radial SVM crossvalidated
+
+```{r}
+set.seed(1)
+tune.out <- tune(svm, y~., data=trainset, kernel='radial',
+                 ranges=list(cost=c(0.01, 1, 10, 100, 1000), 
+                             gamma = c(0.5, 1, 2, 3, 4)), decision.values=T)
+summary(tune.out)
+bestmodelrbf <- tune.out$best.model
+summary(bestmodelrbf)
+```
+
+### Create a poly 2nd,3rd,4th,5th degree SVM crossvalidated
+
+```{r}
+set.seed(1)
+tune.out <- tune(svm, y~., data=trainset, kernel='polynomial',degree=2,
+                 ranges=list(cost=c(0.01, 1, 10, 100), 
+                             gamma = c(0.5, 1, 2, 3, 4)), decision.values=T)
+summary(tune.out)
+bestmodelpoly2 <- tune.out$best.model
+summary(bestmodelpoly2)
+
+set.seed(1)
+tune.out <- tune(svm, y~., data=trainset, kernel='polynomial',degree=3,
+                 ranges=list(cost=c(0.01, 1, 10, 100), 
+                             gamma = c(0.5, 1, 2, 3, 4)), decision.values=T)
+summary(tune.out)
+bestmodelpoly3 <- tune.out$best.model
+summary(bestmodelpoly3)
+
+set.seed(1)
+tune.out <- tune(svm, y~., data=trainset, kernel='polynomial',degree=4,
+                 ranges=list(cost=c(0.01, 1, 10, 100), 
+                             gamma = c(0.5, 1, 2, 3, 4)), decision.values=T)
+summary(tune.out)
+bestmodelpoly4 <- tune.out$best.model
+summary(bestmodelpoly4)
+
+set.seed(1)
+tune.out <- tune(svm, y~., data=trainset, kernel='polynomial',degree=5,
+                 ranges=list(cost=c(0.01, 1, 10, 100), 
+                             gamma = c(0.5, 1, 2, 3, 4)), decision.values=T)
+summary(tune.out)
+bestmodelpoly5 <- tune.out$best.model
+summary(bestmodelpoly5)
+```
+
+
+### SVM Train Plots
+
+
+### Linear
+
+```{r}
+plot(bestmodellinear, trainset)
+```
+
+
+#### Polynomial 2nd Degree
+```{r}
+plot(bestmodelpoly2, trainset)
+```
+
+### Polynomial 3nd Degree
+
+```{r}
+plot(bestmodelpoly3, trainset)
+```
+
+### Polynomial 4th Degree
+
+```{r}
+plot(bestmodelpoly4, trainset)
+```
+
+
+### Polynomial 5th Degree
+
+```{r}
+plot(bestmodelpoly5, trainset)
+```
+
+
+### Polynomial Radial
+
+```{r}
+plot(bestmodelrbf, trainset)
+```
+
+
+### SVM Test Results
+
+
+### Linear
+
+```{r}
+ypredlinear <- predict(bestmodellinear, newdata=testset)
+t = table(pred=ypredlinear, true=testset[,"y"])
+t
+cat("Accuracy= ", (t[1]+t[4])/50)
+```
+
+
+### Polynomial 2nd Degree
+
+```{r}
+ypredpoly2 <- predict(bestmodelpoly2, newdata=testset)
+t = table(pred=ypredpoly2, true=testset[,"y"])
+t
+cat("Accuracy= ", (t[1]+t[4])/50)
+```
+
+
+### Polynomial 3nd Degree
+
+```{r}
+ypredpoly3 <- predict(bestmodelpoly3, newdata=testset)
+t= table(pred=ypredpoly3, true=testset[,"y"])
+t
+cat("Accuracy= ", (t[1]+t[4])/50)
+```
+
+
+### Polynomial 4th Degree
+
+```{r}
+ypredpoly4 <- predict(bestmodelpoly4, newdata=testset)
+t = table(pred=ypredpoly4, true=testset[,"y"])
+t
+cat("Accuracy= ", (t[1]+t[4])/50)
+```
+
+
+### Polynomial 5th Degree
+
+```{r}
+ypredpoly5 <- predict(bestmodelpoly5, newdata=testset)
+t = table(pred=ypredpoly5, true=testset[,"y"])
+t
+cat("Accuracy= ", (t[1]+t[4])/50)
+```
+
+### Polynomial Radial
+
+```{r}
+ypredrbf <- predict(bestmodelrbf, newdata=testset)
+t = table(pred=ypredrbf, true=testset[,"y"])
+t
+cat("Accuracy= ", (t[1]+t[4])/50)
+```
+
+
+### Roc Curves
+
+```{r}
+library(ROCR)
+rocplot <- function(pred, truth, ... ) {
+            predob <- prediction(pred, truth, label.ordering=c(1,0))
+            perf <- performance(predob, "tpr", "fpr")
+            plot(perf, ...)
+}
+```
+
+```{r}
+fitted.attr <- attributes(predict(bestmodellinear,testset, decision.values=T))
+fitted <- fitted.attr$decision.values
+rocplot(fitted, testset[,"y"], col='red',main="ROC Curve Test data")
+fitted.attr <- attributes(predict(bestmodelpoly2,testset, decision.values=T))
+fitted <- fitted.attr$decision.values
+rocplot(fitted, testset[,"y"], col='green', add=T)
+fitted.attr <- attributes(predict(bestmodelpoly3,testset, decision.values=T))
+fitted <- fitted.attr$decision.values
+rocplot(fitted, testset[,"y"], col='blue', add=T)
+fitted.attr <- attributes(predict(bestmodelpoly4,testset, decision.values=T))
+fitted <- fitted.attr$decision.values
+rocplot(fitted, testset[,"y"], col='black', add=T)
+fitted.attr <- attributes(predict(bestmodelpoly5,testset, decision.values=T))
+fitted <- fitted.attr$decision.values
+rocplot(fitted, testset[,"y"], col='orange', add=T)
+fitted.attr <- attributes(predict(bestmodelrbf,testset, decision.values=T))
+fitted <- fitted.attr$decision.values
+rocplot(fitted, testset[,"y"], col='purple', add=T)
+legend(0.82,0.5,legend=c("Linear", "Poly d-2","Poly d-3","Poly d-4","Poly d-5","Radial"),
+       fill=c('red', 'green', 'blue','black','orange', 'purple'))
+
+```
+
+>   Except the poly 2nd degree the rest models have sampe or better results than the linear model.
+
+## Exercise 5
+
+### (a)
+```{r}
+set.seed(1)
+x1 <- runif(500) - 0.5
+x2 <- runif(500) - 0.5
+y <- 1*(x1^2 - x2^2 >0)
+```
+
+### (b)
+
+```{r}
+plot(x1,x2, col=1+y)
+```
+
+### (c) - Logistic Regression
+
+```{r}
+set.seed(1)
+log <- glm(y~x1+x2, family='binomial')
+```
+
+```{r}
+summary(log)
+```
+
+### (d)
+
+```{r}
+log.probs <- predict(log, type='response')
+log.preds <- rep(0,length(y))
+log.preds[log.probs>0.5] <- 1
+table(predicted=log.preds, true=y)
+```
+
+```{r}
+plot(x1,x2,col=log.preds+1)
+#plot(log, col=y+1)
+#plot(log, col=log.preds+1)
+```
+
+
+### (e)
+
+```{r}
+set.seed(1)
+lognonlin <- glm(y~x1+x2+I(x1^2)+I(x2^3)+I(x2^4)+I(x1^6)+ I(x1*x2)+I(x2^8))
+summary(lognonlin)
+```
+
+
+### (f) 
+
+```{r}
+lognonlin.probs <- predict(lognonlin, type='response')
+lognonlin.preds <- rep(0,length(y))
+lognonlin.preds[lognonlin.probs>0.5] <- 1
+table(predicted=lognonlin.preds, true=y)
+plot(x1,x2,col=lognonlin.preds+1)
+```
+
+
+### (g) - SVC
+
+```{r}
+library(e1071)
+set.seed(1)
+x <- matrix(c(x1,x2), ncol=2)
+df <- data.frame(x=x, y=as.factor(y))
+svc <- svm(y~x,data=df, kernel='linear', cost=5)
+svcpred <- predict(svc,df)
+plot(x1,x2,col=as.numeric(svcpred)+1)
+```
+
+
+### (h) - SVM
+
+```{r}
+set.seed(1)
+svmrbf <- svm(y~x,data=df, kernel='radial', cost=10, gamma=10)
+svmrbfpred <- predict(svmrbf,df)
+plot(x1,x2,col=as.numeric(svmrbfpred)+1)
+table(predicted=svmrbfpred, true=y)
+```
+
+
+
+### (i)  Comments
+
+- All models have been fitted and predicted on the same data.
+
+- There wasn't any try to find the best model parameters through cross validation approach as it wasn't the case in the exercise.
+
+- Logistic Regression with linear combination seems to fit better the data vs the Support Vector Classifier linear.
+
+- The Logistic Regression with non linear combination of the features seems to work better than the above models and could yield quite good results. The non linear combination of features offers the opportunity for non linear decision boundaries.
+
+- The SVM with radial kernel predicts the fitted data except 2 of them. Of course it overfits, because it predicts the already fitted data but it seems than it can offer more non linear decision boundaries.
+
+- We could say that the SVM with the radial kernel could offer the best results in a test data set but we could never be sure about it until the right parameters are chosen in order the model to generalize better. The kernel trick and the penalizing parameters could help to create a robust svm model.
+
+- Logistic Regression with non linear combinations could maybe offer results as good as svm with rbf but one should find the right combination of features and it could also overfit easier. As known logistic regression may overfit easily in highdimensional spaces.Of course we could use a penalty parameter that may yield our results more close to generalization but probably lower than an SVM.
+
+- Finally, on the first sight we could try proceed with a SVM with radial kernel, obtain and tune a new model through crossvalidation technique and then check the model on unknown test data to get the final decision.
